@@ -39,7 +39,34 @@ def write_results(filename, results):
                 line = save_format.format(frame=frame_id, id=track_id, x1=round(x1, 1), y1=round(y1, 1), w=round(w, 1), h=round(h, 1), s=round(score, 2))
                 f.write(line)
     logger.info('save results to {}'.format(filename))
-
+# hit = 2
+def allocation_strategy(frameRate):
+    K = 1000
+    next_reactivate = {}  # 下一次需要重新激活的时间
+    max_active = 0  # 最大可用跟踪器数量
+    strategy = []
+    tracker_id = 0
+    t = 0
+    while(t<K):
+        if t == 0:
+            strategy.append(tracker_id)
+            next_reactivate[tracker_id] = t+frameRate+1
+            tracker_id += 1
+            t+=1
+        else:
+            reactivate_time = min(next_reactivate.values())
+            reactivate_tracker, reactivate_time = min(next_reactivate.items(), key=lambda x: x[1])
+            if reactivate_time - t <= 1:
+                strategy.append(reactivate_tracker)
+                next_reactivate[reactivate_tracker] = t+frameRate+1
+                t+=1
+            else:
+                strategy.append(tracker_id)
+                strategy.append(tracker_id)
+                next_reactivate[tracker_id] = t+frameRate+2
+                tracker_id += 1
+                t+=2
+    return strategy, tracker_id
 
 def write_results_no_score(filename, results):
     save_format = '{frame},{id},{x1},{y1},{w},{h},-1,-1,-1,-1\n'
@@ -173,13 +200,14 @@ class MOTEvaluator:
         total_l1 = 0
         total_l2 = 0
         strategy = 0
-        max_tracker_num = int(15)
+        max_tracker_num = int(6)
+        strategy, max_tracker_num = allocation_strategy(max_tracker_num)
         rgb_means=torch.tensor((0.485, 0.456, 0.406)).view(1, 3, 1, 1).to(device)
         std=torch.tensor((0.229, 0.224, 0.225)).view(1, 3, 1, 1).to(device)
         for cur_iter, (imgs,path,imgs_2,path_2) in enumerate(
             progress_bar(self.dataloader)
             ):
-            print('strategy:',strategy)
+            print('strategy:',strategy[cur_iter])
             print(path,path_2)
             frame_id += 1
             bx = np.zeros((imgs.shape[1], imgs.shape[2], imgs.shape[3]))
@@ -208,12 +236,12 @@ class MOTEvaluator:
                     input_imgs_2 = input_imgs_2.half()
                 outputs = model(input_imgs)[0]
                 outputs_2 = model(input_imgs_2)[0]
-                bx = run_attack(outputs,outputs_2,bx, strategy, max_tracker_num, adam_opt)
+                bx = run_attack(outputs,outputs_2,bx, strategy[cur_iter], max_tracker_num, adam_opt)
 
-            if strategy == max_tracker_num-1:
-                strategy = 0
-            else:
-                strategy += 1
+            # if strategy == max_tracker_num-1:
+            #     strategy = 0
+            # else:
+            #     strategy += 1
             print(added_imgs.shape)
             added_blob = torch.clamp(added_imgs*255,0,255).squeeze().permute(1, 2, 0).detach().cpu().numpy()
             added_blob = added_blob[..., ::-1]
