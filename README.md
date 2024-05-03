@@ -35,11 +35,11 @@ You can find the model and data through [Google Drive](https://drive.google.com/
 
 ## Adversarial Perturbations Generation
 ```shell
-python tools/latency_attack.py -f exps/example/mot/stra_det_s.py -c path/bytetrack_s_mot17.pth.tar -b 1 -d 1 --fuse --source=path/data/ --local_rank=0 --nms=0.45 --conf=0.3
+python tools/latency_attack.py -f exps/example/mot/stra_det_s.py -c path/bytetrack_s_mot17.pth.tar -b 1 -d 1 --fuse --source=path/data/ --local_rank=0 --nms=0.45 --conf=0.25
 ```
 ## Adversarial Perturbations Evaluation
 ```shell
-python tools/track.py -f exps/example/mot/yolox_s_mix_det.py -c path/bytetrack_s_mot17.pth.tar -b 1 -d 1 --fuse --source=path/data/ --local_rank=0 --nms=0.45 --conf=0.3
+python tools/track.py -f exps/example/mot/yolox_s_mix_det.py -c path/bytetrack_s_mot17.pth.tar -b 1 -d 1 --fuse --source=path/data/ --local_rank=0 --nms=0.45 --conf=0.25
 ```
 
 
